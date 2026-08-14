@@ -1,0 +1,23 @@
+model MaintenanceHistory {
+  id              String          @id @default(uuid())
+  machineId       String
+  workOrderId     String?
+  performedById   String
+  maintenanceType MaintenanceType
+  description     String?
+  partsUsed       Json?
+  cost            Decimal?        @db.Decimal(12, 2)
+
+  performedAt DateTime @default(now())
+
+  machine Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([machineId])
+  @@index([workOrderId])
+  @@index([performedById])
+  @@index([performedAt])
+}

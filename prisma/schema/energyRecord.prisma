@@ -1,0 +1,18 @@
+model EnergyRecord {
+  id             String   @id @default(uuid())
+  plantId        String
+  machineId      String?
+  energyConsumed Float
+  energyCost     Decimal? @db.Decimal(12, 2)
+
+  recordedAt DateTime @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  machine Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+
+  @@index([plantId])
+  @@index([machineId])
+  @@index([recordedAt])
+  @@index([plantId, recordedAt])
+}

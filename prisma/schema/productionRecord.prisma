@@ -1,0 +1,24 @@
+model ProductionRecord {
+  id               String           @id @default(uuid())
+  plantId          String
+  productionLineId String
+  machineId        String?
+  targetQuantity   Int
+  actualQuantity   Int
+  defectQuantity   Int              @default(0)
+  downtimeMinutes  Int              @default(0)
+  status           ProductionStatus @default(RUNNING)
+
+  recordedAt DateTime @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  productionLine ProductionLine @relation(fields: [productionLineId], references: [id], onDelete: Cascade)
+
+  machine Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+
+  @@index([plantId])
+  @@index([productionLineId])
+  @@index([machineId])
+  @@index([recordedAt])
+}

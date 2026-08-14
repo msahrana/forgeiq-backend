@@ -1,0 +1,61 @@
+model User {
+  id                 String       @id @default(uuid())
+  name               String
+  email              String       @unique
+  password           String?
+  emailVerified      Boolean      @default(false)
+  role               UserRole     @default(VIEWER)
+  status             UserStatus   @default(ACTIVE)
+  needPasswordChange Boolean      @default(false)
+  isDeleted          Boolean      @default(false)
+  googleId           String?      @unique
+  authProvider       AuthProvider @default(CREDENTIAL)
+  imageUrl           String       @default("")
+  imagePublicId      String       @default("")
+  image              String?
+  phone              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Organization
+  memberships        OrganizationMember[]
+  ownedOrganizations Organization[]       @relation("OrganizationOwner")
+
+  // Plant
+  managedPlants Plant[] @relation("PlantManager")
+
+  // Maintenance
+  assignedMaintenanceTasks MaintenanceTask[] @relation("MaintenanceAssignee")
+  createdMaintenanceTasks  MaintenanceTask[] @relation("MaintenanceCreator")
+
+  // Work Orders
+  assignedWorkOrders WorkOrder[] @relation("WorkOrderAssignee")
+  createdWorkOrders  WorkOrder[] @relation("WorkOrderCreator")
+
+  // Alerts
+  acknowledgedAlerts Alert[] @relation("AlertAcknowledgedBy")
+  resolvedAlerts     Alert[] @relation("AlertResolvedBy")
+
+  // Quality
+  qualityInspections QualityInspection[] @relation("QualityInspector")
+
+  // Notifications
+  notifications Notification[]
+
+  // Reports
+  reports Report[] @relation("ReportCreator")
+
+  // AI
+  aiConversations AIConversation[]
+
+  // Audit
+  auditLogs AuditLog[]
+
+  // Auth.js / Session support
+  accounts Account[]
+  sessions Session[]
+
+  @@index([email])
+  @@index([status])
+}

@@ -1,0 +1,25 @@
+model MachineThreshold {
+  id String @id @default(uuid())
+
+  machineId String @unique
+
+  temperatureWarning  Float?
+  temperatureCritical Float?
+
+  vibrationWarning  Float?
+  vibrationCritical Float?
+
+  pressureWarning  Float?
+  pressureCritical Float?
+
+  rpmWarning  Float?
+  rpmCritical Float?
+
+  powerWarning  Float?
+  powerCritical Float?
+
+  machine Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

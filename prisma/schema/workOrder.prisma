@@ -1,0 +1,41 @@
+model WorkOrder {
+  id                String              @id @default(uuid())
+  plantId           String
+  machineId         String
+  maintenanceTaskId String?
+  assignedToId      String?
+  createdById       String
+  workOrderNumber   String              @unique
+  issue             String
+  instructions      String?
+  priority          MaintenancePriority @default(MEDIUM)
+  status            WorkOrderStatus     @default(OPEN)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  estimatedCost Decimal? @db.Decimal(12, 2)
+  actualCost    Decimal? @db.Decimal(12, 2)
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  machine Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  maintenanceTask MaintenanceTask? @relation(fields: [maintenanceTaskId], references: [id], onDelete: SetNull)
+
+  assignedTo User? @relation("WorkOrderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdBy User @relation("WorkOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  maintenanceHistory MaintenanceHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([machineId])
+  @@index([maintenanceTaskId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+}

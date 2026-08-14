@@ -1,0 +1,26 @@
+model AuditLog {
+  id             String          @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         AuditAction
+  entityType     AuditEntityType
+  entityId       String?
+
+  oldValue Json?
+  newValue Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}

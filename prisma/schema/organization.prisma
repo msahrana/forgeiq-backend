@@ -1,0 +1,26 @@
+model Organization {
+  id       String             @id @default(uuid())
+  name     String
+  slug     String             @unique
+  logo     String?
+  industry String?
+  country  String?
+  timezone String             @default("UTC")
+  status   OrganizationStatus @default(TRIAL)
+
+  ownerId String
+  owner   User   @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members OrganizationMember[]
+  plants  Plant[]
+
+  reports         Report[]
+  aiConversations AIConversation[]
+  auditLogs       AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([status])
+}

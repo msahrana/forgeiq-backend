@@ -1,0 +1,35 @@
+model Alert {
+  id               String        @id @default(uuid())
+  plantId          String
+  machineId        String?
+  type             AlertType
+  severity         AlertSeverity
+  status           AlertStatus   @default(OPEN)
+  title            String
+  message          String
+  riskScore        Float?
+  acknowledgedById String?
+  resolvedById     String?
+
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+
+  metadata Json?
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  machine Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+
+  acknowledgedBy User? @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  resolvedBy User? @relation("AlertResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([machineId])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}

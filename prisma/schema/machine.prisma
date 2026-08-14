@@ -1,0 +1,46 @@
+model Machine {
+  id               String        @id @default(uuid())
+  plantId          String
+  productionLineId String?
+  name             String
+  code             String
+  type             MachineType
+  manufacturer     String?
+  model            String?
+  serialNumber     String?
+  status           MachineStatus @default(OFFLINE)
+  healthScore      Float         @default(100)
+  failureRisk      Float         @default(0)
+  riskLevel        RiskLevel     @default(LOW)
+
+  installationDate  DateTime?
+  lastMaintenanceAt DateTime?
+  nextMaintenanceAt DateTime?
+
+  operatingHours Float @default(0)
+  plant          Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  productionLine ProductionLine? @relation(fields: [productionLineId], references: [id], onDelete: SetNull)
+
+  metrics   MachineMetric[]
+  threshold MachineThreshold?
+
+  maintenanceTasks MaintenanceTask[]
+  workOrders       WorkOrder[]
+  alerts           Alert[]
+
+  maintenanceHistory MaintenanceHistory[]
+
+  productionRecords ProductionRecord[]
+  energyRecords     EnergyRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plantId, code])
+  @@index([plantId])
+  @@index([productionLineId])
+  @@index([status])
+  @@index([riskLevel])
+  @@index([failureRisk])
+}

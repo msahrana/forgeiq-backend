@@ -1,0 +1,20 @@
+model ProductionLine {
+  id                 String              @id @default(uuid())
+  plantId            String
+  name               String
+  code               String
+  description        String?
+  status             ProductionStatus    @default(IDLE)
+  targetOutput       Int?
+  plant              Plant               @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  machines           Machine[]
+  productionRecords  ProductionRecord[]
+  qualityInspections QualityInspection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plantId, code])
+  @@index([plantId])
+  @@index([status])
+}

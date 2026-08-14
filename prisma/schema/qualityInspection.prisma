@@ -1,0 +1,31 @@
+model QualityInspection {
+  id                String        @id @default(uuid())
+  plantId           String
+  productionLineId  String
+  productName       String
+  batchNumber       String?
+  inspectedQuantity Int
+  passedQuantity    Int
+  defectQuantity    Int
+  result            QualityResult @default(PENDING)
+  defectType        DefectType?
+  notes             String?
+  inspectedById     String
+
+  inspectionDate DateTime @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  productionLine ProductionLine @relation(fields: [productionLineId], references: [id], onDelete: Cascade)
+
+  inspectedBy User @relation("QualityInspector", fields: [inspectedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([productionLineId])
+  @@index([inspectedById])
+  @@index([result])
+  @@index([inspectionDate])
+}

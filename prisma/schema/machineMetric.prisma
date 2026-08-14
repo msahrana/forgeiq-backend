@@ -1,0 +1,18 @@
+model MachineMetric {
+  id               String @id @default(uuid())
+  machineId        String
+  temperature      Float?
+  vibration        Float?
+  pressure         Float?
+  rpm              Float?
+  powerConsumption Float?
+  loadPercentage   Float?
+
+  recordedAt DateTime @default(now())
+
+  machine Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId])
+  @@index([recordedAt])
+  @@index([machineId, recordedAt])
+}
