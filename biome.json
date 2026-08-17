@@ -7,7 +7,7 @@
     },
     "files": {
         "ignoreUnknown": false,
-        "includes": ["**", "!src/generated", "!src/app/templates"]
+        "includes": ["**", "!/generated", "!src/templates"]
     },
     "formatter": {
         "enabled": true,
@@ -34,7 +34,7 @@
                 "useImportType": "off"
             }
         },
-        "includes": ["**", "!src/generated", "!src/app/templates"]
+        "includes": ["**", "!/generated", "!src/templates"]
     },
     "javascript": {
         "formatter": {

@@ -2,14 +2,28 @@ import { Router } from 'express';
 import { authControllers } from './auth.controller';
 import { auth } from '../../middleware/checkAuth';
 import { UserRole } from '../../../generated/prisma/enums';
+import { validateRequest } from '../../middleware/validateRequest';
+import { UserValidation } from './auth.validation';
 
 const router = Router();
 
-router.post('/register', authControllers.userRegister);
+router.post(
+    '/register',
+    validateRequest(UserValidation.RegistrationZodSchema),
+    authControllers.userRegister,
+);
 
-router.post('/verify-email', authControllers.verifyEmail);
+router.post(
+    '/verify-email',
+    validateRequest(UserValidation.EmailVerifyZodSchema),
+    authControllers.verifyEmail,
+);
 
-router.post('/login', authControllers.loginUser);
+router.post(
+    '/login',
+    validateRequest(UserValidation.LoginZodSchema),
+    authControllers.loginUser,
+);
 
 router.post('/refresh-token', authControllers.refreshToken);
 

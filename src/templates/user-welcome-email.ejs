@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>ForgeIQ — Welcome</title>
+
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #eef2f6;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #172033;
+            }
+
+            .wrapper {
+                width: 100%;
+                padding: 40px 16px;
+                box-sizing: border-box;
+            }
+
+            .container {
+                max-width: 560px;
+                margin: 0 auto;
+                background: #ffffff;
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 10px 35px rgba(15, 23, 42, 0.1);
+            }
+
+            /* Header */
+            .header {
+                background: #0b1220;
+                padding: 30px 35px;
+                text-align: center;
+                border-bottom: 4px solid #f59e0b;
+            }
+
+            .logo {
+                margin: 0;
+                color: #ffffff;
+                font-size: 30px;
+                font-weight: 800;
+                letter-spacing: -0.5px;
+            }
+
+            .logo span {
+                color: #f59e0b;
+            }
+
+            .tagline {
+                margin: 7px 0 0;
+                color: #94a3b8;
+                font-size: 12px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+            }
+
+            /* Content */
+            .content {
+                padding: 42px 38px;
+            }
+
+            .icon {
+                width: 58px;
+                height: 58px;
+                line-height: 58px;
+                margin-bottom: 22px;
+                text-align: center;
+                border-radius: 14px;
+                background: #fff7e6;
+                color: #f59e0b;
+                font-size: 27px;
+                font-weight: 800;
+            }
+
+            .title {
+                margin: 0 0 14px;
+                color: #111827;
+                font-size: 27px;
+                line-height: 1.3;
+            }
+
+            .name {
+                color: #f59e0b;
+            }
+
+            .text {
+                margin: 0 0 17px;
+                color: #64748b;
+                font-size: 15px;
+                line-height: 1.75;
+            }
+
+            /* Platform Features */
+            .features {
+                margin: 28px 0;
+            }
+
+            .feature {
+                display: table;
+                width: 100%;
+                margin-bottom: 12px;
+                padding: 14px 16px;
+                box-sizing: border-box;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+            }
+
+            .feature-icon {
+                display: table-cell;
+                width: 34px;
+                vertical-align: middle;
+                color: #f59e0b;
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            .feature-content {
+                display: table-cell;
+                vertical-align: middle;
+            }
+
+            .feature-title {
+                margin: 0 0 3px;
+                color: #334155;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .feature-text {
+                margin: 0;
+                color: #94a3b8;
+                font-size: 11px;
+                line-height: 1.5;
+            }
+
+            /* CTA */
+            .cta-container {
+                margin: 30px 0 10px;
+                text-align: center;
+            }
+
+            .cta {
+                display: inline-block;
+                padding: 13px 28px;
+                background: #f59e0b;
+                color: #111827 !important;
+                border-radius: 7px;
+                font-size: 14px;
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+            /* Footer */
+            .footer {
+                padding: 24px 35px;
+                background: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                text-align: center;
+            }
+
+            .footer-brand {
+                margin: 0 0 8px;
+                color: #334155;
+                font-size: 14px;
+                font-weight: 700;
+            }
+
+            .footer-accent {
+                color: #f59e0b;
+            }
+
+            .footer-text {
+                margin: 0;
+                color: #94a3b8;
+                font-size: 11px;
+                line-height: 1.6;
+            }
+
+            @media only screen and (max-width: 600px) {
+                .wrapper {
+                    padding: 20px 10px;
+                }
+
+                .header {
+                    padding: 25px 20px;
+                }
+
+                .content {
+                    padding: 32px 22px;
+                }
+
+                .footer {
+                    padding: 22px 20px;
+                }
+
+                .title {
+                    font-size: 23px;
+                }
+
+                .feature {
+                    padding: 12px;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="wrapper">
+            <div class="container">
+                <!-- ForgeIQ Header -->
+                <div class="header">
+                    <h1 class="logo">Forge<span>IQ</span></h1>
+
+                    <p class="tagline">Intelligent Industrial Operations</p>
+                </div>
+
+                <!-- Main Content -->
+                <div class="content">
+                    <div class="icon">✓</div>
+
+                    <h2 class="title">
+                        Welcome to Forge<span class="name">IQ</span>, <%= name
+                        %>!
+                    </h2>
+
+                    <p class="text">
+                        We're excited to have you on board. Your ForgeIQ account
+                        has been successfully created, and you're ready to
+                        experience a smarter way to manage industrial
+                        operations.
+                    </p>
+
+                    <p class="text">
+                        ForgeIQ brings intelligence, automation, and operational
+                        visibility together in one powerful platform.
+                    </p>
+
+                    <!-- Platform Features -->
+                    <div class="features">
+                        <div class="feature">
+                            <div class="feature-icon">◈</div>
+
+                            <div class="feature-content">
+                                <p class="feature-title">
+                                    Intelligent Monitoring
+                                </p>
+
+                                <p class="feature-text">
+                                    Monitor industrial operations and production
+                                    data in real time.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="feature-icon">◉</div>
+
+                            <div class="feature-content">
+                                <p class="feature-title">AI-Powered Insights</p>
+
+                                <p class="feature-text">
+                                    Turn operational data into meaningful
+                                    insights and smarter decisions.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <div class="feature-icon">⚙</div>
+
+                            <div class="feature-content">
+                                <p class="feature-title">
+                                    Operational Intelligence
+                                </p>
+
+                                <p class="feature-text">
+                                    Improve efficiency, identify issues, and
+                                    optimize industrial workflows.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="cta-container">
+                        <a href="#" class="cta"> Explore ForgeIQ </a>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    <p class="footer-brand">
+                        Forge<span class="footer-accent">IQ</span>
+                    </p>
+
+                    <p class="footer-text">
+                        Intelligent Industrial Operations Platform
+                    </p>
+
+                    <p class="footer-text">
+                        &copy; <%= new Date().getFullYear() %> ForgeIQ. All
+                        rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
