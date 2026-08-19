@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
 import { sendResponse } from '../../utils/sendResponse';
 import catchAsync from '../../utils/catchAsync';
 import { authServices } from './auth.service';
+import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 
 const userRegister = catchAsync(async (req: Request, res: Response) => {
@@ -46,17 +46,119 @@ const verifyEmail = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const loginUser = catchAsync(async (req: Request, res: Response) => {});
+const loginUser = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
 
-const refreshToken = catchAsync(async (req: Request, res: Response) => {});
+    const result = await authServices.loginUserIntoDB(payload);
 
-const changePassword = catchAsync(async (req: Request, res: Response) => {});
+    const { accessToken, refreshToken } = result;
+
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'User logged in Successfully!',
+        data: {
+            accessToken,
+            refreshToken,
+        },
+    });
+});
+
+const refreshToken = catchAsync(async (req: Request, res: Response) => {
+    if (!req.cookies.refreshToken) {
+        throw new Error('Refresh token is missing');
+    }
+
+    const token = req.cookies.refreshToken;
+
+    const result = await authServices.refreshTokenIntoDB(token);
+
+    const { accessToken, refreshToken: newRefreshToken } = result;
+
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'New tokens generated successfully.',
+        data: {
+            accessToken,
+            refreshToken: newRefreshToken,
+        },
+    });
+});
+
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?.id as string;
+    const { oldPassword, newPassword } = req.body;
+
+    const result = await authServices.changePasswordIntoDB(
+        userId,
+        oldPassword,
+        newPassword,
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Password Changed Successfully.',
+        data: result,
+    });
+});
+
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
+
+    await authServices.forgotPasswordIntoDB(payload);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `OTP Sent To Email : ${payload.email}`,
+        data: null,
+    });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
+
+    await authServices.resetPasswordIntoDB(payload);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Password Changed Successfully.',
+        data: null,
+    });
+});
 
 const googleLogin = catchAsync(async (req: Request, res: Response) => {});
-
-const forgotPassword = catchAsync(async (req: Request, res: Response) => {});
-
-const resetPassword = catchAsync(async (req: Request, res: Response) => {});
 
 const getMe = catchAsync(async (req: Request, res: Response) => {});
 
@@ -76,9 +178,9 @@ export const authControllers = {
     loginUser,
     refreshToken,
     changePassword,
-    googleLogin,
     forgotPassword,
     resetPassword,
+    googleLogin,
     getMe,
     getUsers,
     getUserById,

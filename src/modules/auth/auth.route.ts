@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { authControllers } from './auth.controller';
-import { auth } from '../../middleware/checkAuth';
-import { UserRole } from '../../../generated/prisma/enums';
 import { validateRequest } from '../../middleware/validateRequest';
+import { UserRole } from '../../../generated/prisma/enums';
+import { authControllers } from './auth.controller';
 import { UserValidation } from './auth.validation';
+import { auth } from '../../middleware/checkAuth';
+import { Router } from 'express';
 
 const router = Router();
 
@@ -42,11 +42,11 @@ router.post(
     authControllers.changePassword,
 );
 
-router.post('/google', authControllers.googleLogin);
-
 router.post('/forgot-password', authControllers.forgotPassword);
 
 router.post('/reset-password', authControllers.resetPassword);
+
+router.post('/google', authControllers.googleLogin);
 
 router.get(
     '/me',

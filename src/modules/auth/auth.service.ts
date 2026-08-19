@@ -1,7 +1,3 @@
-import { prisma } from '../../lib/prisma';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import path from 'path';
 import {
     IForgotPasswordPayload,
     IGoogleLoginPayload,
@@ -11,13 +7,17 @@ import {
     IResetPasswordPayload,
     IVerifyEmailPayload,
 } from './auth.interface';
-import { redisClient } from '../../lib/redis';
-import config from '../../config';
-import ejs from 'ejs';
-import { transporter } from '../../lib/nodemailer';
-import { jwtUtils } from '../../utils/jwt';
-import { SignOptions } from 'jsonwebtoken';
 import { UserRole, UserStatus } from '../../../generated/prisma/enums';
+import { JwtPayload, SignOptions } from 'jsonwebtoken';
+import { transporter } from '../../lib/nodemailer';
+import { redisClient } from '../../lib/redis';
+import { jwtUtils } from '../../utils/jwt';
+import { prisma } from '../../lib/prisma';
+import config from '../../config';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import path from 'path';
+import ejs from 'ejs';
 
 const userRegisterIntoDB = async (payload: IRegisterPatientPayload) => {
     const { name, password, phone } = payload;
@@ -191,17 +191,297 @@ const verifyEmailIntoDB = async (payload: IVerifyEmailPayload) => {
     };
 };
 
-const loginUserIntoDB = async (payload: ILoginUserPayload) => {};
+const loginUserIntoDB = async (payload: ILoginUserPayload) => {
+    const { password } = payload;
 
-const refreshTokenIntoDB = async (token: string) => {};
+    const email = payload.email.trim().toLowerCase();
 
-const changePasswordIntoDB = async () => {};
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+        throw new Error('User is DEACTIVATED!!');
+    }
+
+    if (user.status === UserStatus.SUSPENDED) {
+        throw new Error('User is SUSPENDED!!');
+    }
+
+    if (user.isDeleted || user.status === 'DELETED') {
+        throw new Error('User is DELETED!');
+    }
+
+    const isPasswordMatched = await bcrypt.compare(
+        password,
+        user.password as string,
+    );
+
+    if (!isPasswordMatched) {
+        throw new Error('Invalid credentials');
+    }
+
+    const jwtPayload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        accessToken,
+        refreshToken,
+    };
+};
+
+const refreshTokenIntoDB = async (token: string) => {
+    const verifiedRefreshToken = jwtUtils.verifyToken(
+        token,
+        config.jwt_refresh_secret,
+    );
+
+    if (!verifiedRefreshToken.success || !verifiedRefreshToken.data) {
+        throw new Error(
+            config.node_env === 'development'
+                ? verifiedRefreshToken.error
+                : 'Invalid refresh token',
+        );
+    }
+
+    const data = verifiedRefreshToken.data as JwtPayload;
+
+    const user = await prisma.user.findUnique({
+        where: { id: data.userId },
+    });
+
+    if (!user || user.isDeleted || user.status !== UserStatus.ACTIVE) {
+        throw new Error('User is inactive or not found');
+    }
+
+    const jwtPayload = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        accessToken,
+        refreshToken,
+    };
+};
+
+const changePasswordIntoDB = async (
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if (!user) {
+        throw new Error('User Not Found...!');
+    }
+
+    const isPasswordMatched = await bcrypt.compare(
+        oldPassword,
+        user.password as string,
+    );
+
+    if (!isPasswordMatched) {
+        throw new Error('Invalid old password');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(
+        newPassword,
+        Number(config.bcrypt_salt_rounds),
+    );
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+    });
+
+    return updatedUser;
+};
+
+const forgotPasswordIntoDB = async (payload: IForgotPasswordPayload) => {
+    const { email } = payload;
+
+    const isUserExist = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+    });
+
+    if (!isUserExist) {
+        throw new Error('User Does Not Exist!');
+    }
+
+    if (isUserExist.status === 'DEACTIVATED') {
+        throw new Error('User is DEACTIVATED!');
+    }
+
+    if (!isUserExist.emailVerified) {
+        throw new Error('User Not Verified!');
+    }
+
+    if (isUserExist.status === 'SUSPENDED') {
+        throw new Error('User is SUSPENDED!');
+    }
+
+    if (isUserExist.isDeleted || isUserExist.status === 'DELETED') {
+        throw new Error('User is DELETED!');
+    }
+
+    if (isUserExist.googleId && isUserExist.authProvider === 'GOOGLE') {
+        throw new Error('User Has Account With Google!');
+    }
+
+    const otp = crypto.randomInt(100000, 1000000).toString();
+
+    const key = `forgot-password-otp:${isUserExist.email}`;
+
+    const expirationSeconds = 5 * 60; // 5 min
+
+    await redisClient.set(key, otp, {
+        expiration: {
+            type: 'EX',
+            value: expirationSeconds,
+        },
+    });
+
+    const templatePath = path.join(
+        process.cwd(),
+        'src/templates/forgot-password.ejs',
+    );
+
+    const templateData = {
+        name: isUserExist.name,
+        otp,
+        expirationMinutes: expirationSeconds / 60,
+    };
+
+    const html = await ejs.renderFile(templatePath, templateData);
+
+    await transporter.sendMail({
+        from: config.email_sender,
+        to: isUserExist.email,
+        subject: 'Forgot Password',
+        html,
+    });
+};
+
+const resetPasswordIntoDB = async (payload: IResetPasswordPayload) => {
+    const { email, otp, newPassword } = payload;
+
+    const isUserExist = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+    });
+
+    if (!isUserExist) {
+        throw new Error('User Does Not Exist!');
+    }
+
+    if (isUserExist.status === 'DEACTIVATED') {
+        throw new Error('User is DEACTIVATED!');
+    }
+
+    if (!isUserExist.emailVerified) {
+        throw new Error('User Not Verified!');
+    }
+
+    if (isUserExist.status === 'SUSPENDED') {
+        throw new Error('User is SUSPENDED!');
+    }
+
+    if (isUserExist.isDeleted || isUserExist.status === 'DELETED') {
+        throw new Error('User is DELETED!');
+    }
+
+    if (isUserExist.googleId && isUserExist.authProvider === 'GOOGLE') {
+        throw new Error('User Has Account With Google!');
+    }
+
+    const key = `forgot-password-otp:${isUserExist.email}`;
+
+    const redisOtp = await redisClient.get(key);
+
+    if (!redisOtp) {
+        throw new Error('Invalid OTP!');
+    }
+
+    if (redisOtp !== otp) {
+        throw new Error('OTP Does Not Match!');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(
+        newPassword,
+        Number(config.bcrypt_salt_rounds),
+    );
+
+    await prisma.user.update({
+        where: {
+            email: isUserExist.email,
+        },
+        data: {
+            password: hashedNewPassword,
+        },
+    });
+
+    await redisClient.del([key]);
+
+    const templatePath = path.join(
+        process.cwd(),
+        'src/templates/reset-password-success.ejs',
+    );
+
+    const templateData = {
+        name: isUserExist.name,
+    };
+
+    const html = await ejs.renderFile(templatePath, templateData);
+
+    await transporter.sendMail({
+        from: config.email_sender,
+        to: isUserExist.email,
+        subject: 'Password Changed',
+        html,
+    });
+};
 
 const googleLoginIntoDB = async (payload: IGoogleLoginPayload) => {};
-
-const forgotPasswordIntoDB = async (payload: IForgotPasswordPayload) => {};
-
-const resetPasswordIntoDB = async (payload: IResetPasswordPayload) => {};
 
 const getMeIntoDB = async (user: IRequestUser) => {};
 
@@ -219,9 +499,9 @@ export const authServices = {
     loginUserIntoDB,
     refreshTokenIntoDB,
     changePasswordIntoDB,
-    googleLoginIntoDB,
     forgotPasswordIntoDB,
     resetPasswordIntoDB,
+    googleLoginIntoDB,
     getMeIntoDB,
     getUsersIntoDB,
     getUserByIdIntoDB,

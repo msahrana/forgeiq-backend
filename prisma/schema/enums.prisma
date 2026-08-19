@@ -3,6 +3,7 @@ enum UserStatus {
   INVITED
   SUSPENDED
   DEACTIVATED
+  DELETED
 }
 
 enum MemberStatus {
@@ -10,6 +11,7 @@ enum MemberStatus {
   INVITED
   SUSPENDED
   REMOVED
+  DELETED
 }
 
 enum OrganizationStatus {
