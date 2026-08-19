@@ -3,6 +3,8 @@ import catchAsync from '../../utils/catchAsync';
 import { authServices } from './auth.service';
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
+import { IRequestUser } from './auth.interface';
+import AppError from '../../errors/AppError';
 
 const userRegister = catchAsync(async (req: Request, res: Response) => {
     const payload = req.body;
@@ -158,18 +160,121 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const googleLogin = catchAsync(async (req: Request, res: Response) => {});
+const googleLogin = catchAsync(async (req: Request, res: Response) => {
+    const payload = req.body;
 
-const getMe = catchAsync(async (req: Request, res: Response) => {});
+    const result = await authServices.googleLoginIntoDB(payload);
 
-const getUsers = catchAsync(async (req: Request, res: Response) => {});
+    const { accessToken, refreshToken } = result;
 
-const getUserById = catchAsync(async (req: Request, res: Response) => {});
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
+    });
 
-const updateMyProfile = catchAsync(async (req: Request, res: Response) => {});
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'New tokens generated successfully',
+        data: {
+            accessToken,
+            refreshToken,
+        },
+    });
+});
+
+const getMe = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user as IRequestUser;
+
+    if (!user) {
+        throw new Error('User information is missing in the request');
+    }
+
+    const result = await authServices.getMeIntoDB(user);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'User Profile Fetched Successfully!',
+        data: result,
+    });
+});
+
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+    const result = await authServices.getAllUsersIntoDB();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'All Users Fetched Successfully!!',
+        data: result,
+    });
+});
+
+const getUserById = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    const result = await authServices.getUserByIdIntoDB(userId as string);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Single User Info Found Successfully!',
+        data: result,
+    });
+});
+
+const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?.id as string;
+    const payload = req.body;
+
+    const result = await authServices.updateMyProfileIntoDB(userId, payload);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'User Profile Updated Successfully.',
+        data: result,
+    });
+});
 
 const uploadProfileImage = catchAsync(
-    async (req: Request, res: Response) => {},
+    async (req: Request, res: Response): Promise<void> => {
+        if (!req.file) {
+            throw new AppError(httpStatus.BAD_REQUEST, 'No File Uploaded!!!');
+        }
+
+        if (!req.user?.id) {
+            throw new AppError(
+                httpStatus.UNAUTHORIZED,
+                'User information is missing.',
+            );
+        }
+
+        const file = req.file.buffer;
+        const userId = req.user.id;
+
+        const result = await authServices.uploadProfileImageIntoDB(
+            file,
+            userId,
+        );
+
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: 'Profile Image Uploaded Successfully!',
+            data: result,
+        });
+    },
 );
 
 export const authControllers = {
@@ -182,7 +287,7 @@ export const authControllers = {
     resetPassword,
     googleLogin,
     getMe,
-    getUsers,
+    getAllUsers,
     getUserById,
     updateMyProfile,
     uploadProfileImage,

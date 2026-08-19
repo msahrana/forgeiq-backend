@@ -4,6 +4,7 @@ import { authControllers } from './auth.controller';
 import { UserValidation } from './auth.validation';
 import { auth } from '../../middleware/checkAuth';
 import { Router } from 'express';
+import { upload } from '../../lib/multer';
 
 const router = Router();
 
@@ -63,7 +64,7 @@ router.get(
     authControllers.getMe,
 );
 
-router.get('/users', authControllers.getUsers);
+router.get('/users', authControllers.getAllUsers);
 
 router.get('/user/:id', authControllers.getUserById);
 
@@ -94,6 +95,7 @@ router.patch(
         UserRole.TECHNICIAN,
         UserRole.VIEWER,
     ),
+    upload.single('profileImage'),
     authControllers.uploadProfileImage,
 );
 

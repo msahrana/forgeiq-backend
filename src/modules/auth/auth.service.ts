@@ -7,7 +7,11 @@ import {
     IResetPasswordPayload,
     IVerifyEmailPayload,
 } from './auth.interface';
-import { UserRole, UserStatus } from '../../../generated/prisma/enums';
+import {
+    AuthProvider,
+    UserRole,
+    UserStatus,
+} from '../../../generated/prisma/enums';
 import { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { transporter } from '../../lib/nodemailer';
 import { redisClient } from '../../lib/redis';
@@ -18,6 +22,11 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import path from 'path';
 import ejs from 'ejs';
+import { TokenPayload } from 'google-auth-library';
+import { googleClient } from '../../lib/googleAuth';
+import { Prisma } from '../../../generated/prisma/client';
+import { cloudinary } from '../../lib/cloudinary';
+import { UploadApiResponse } from 'cloudinary';
 
 const userRegisterIntoDB = async (payload: IRegisterPatientPayload) => {
     const { name, password, phone } = payload;
@@ -159,7 +168,7 @@ const verifyEmailIntoDB = async (payload: IVerifyEmailPayload) => {
     await transporter.sendMail({
         from: config.email_sender,
         to: email,
-        subject: 'Welcome To SR Healthcare System',
+        subject: 'Welcome To ForgeIQ',
         html,
     });
 
@@ -481,17 +490,270 @@ const resetPasswordIntoDB = async (payload: IResetPasswordPayload) => {
     });
 };
 
-const googleLoginIntoDB = async (payload: IGoogleLoginPayload) => {};
+const googleLoginIntoDB = async (payload: IGoogleLoginPayload) => {
+    let googleIdTokenPayload: TokenPayload | null | undefined = null;
 
-const getMeIntoDB = async (user: IRequestUser) => {};
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: payload.idToken,
+            audience: config.google_client_id,
+        });
 
-const getUsersIntoDB = async () => {};
+        googleIdTokenPayload = ticket.getPayload();
+    } catch (error) {
+        console.log('Google ID Token Verification Failed', error);
+        throw new Error('Invalid Or Expired Google Id Token');
+    }
 
-const getUserByIdIntoDB = async (userId: string) => {};
+    if (!googleIdTokenPayload) {
+        throw new Error('Invalid Or Expired Google Id Token');
+    }
 
-const updateMyProfileIntoDB = async () => {};
+    if (!googleIdTokenPayload.email) {
+        throw new Error('Google Email Not Found');
+    }
 
-const uploadProfileImageIntoDB = async (buffer: Buffer, userId: string) => {};
+    if (!googleIdTokenPayload.name) {
+        throw new Error('Google Email User Name Not Found');
+    }
+
+    const ifUserExistWithGoogleAuth = await prisma.user.findUnique({
+        where: {
+            email: googleIdTokenPayload.email,
+            role: UserRole.VIEWER,
+            googleId: googleIdTokenPayload.sub,
+        },
+    });
+
+    let user = ifUserExistWithGoogleAuth;
+
+    if (!ifUserExistWithGoogleAuth) {
+        const ifUserExistWithCredentials = await prisma.user.findUnique({
+            where: {
+                email: googleIdTokenPayload.email,
+                role: UserRole.VIEWER,
+                authProvider: AuthProvider.CREDENTIAL,
+            },
+        });
+
+        if (ifUserExistWithCredentials) {
+            if (!ifUserExistWithCredentials.emailVerified) {
+                throw new Error('Email Not Verified');
+            }
+
+            if (ifUserExistWithCredentials.status === UserStatus.SUSPENDED) {
+                throw new Error('User Is SUSPENDED');
+            }
+
+            if (
+                ifUserExistWithCredentials.isDeleted ||
+                ifUserExistWithCredentials.status === UserStatus.DELETED
+            ) {
+                throw new Error('User Is Deleted');
+            }
+
+            user = await prisma.user.update({
+                where: {
+                    id: ifUserExistWithCredentials.id,
+                },
+
+                data: {
+                    googleId: googleIdTokenPayload.sub,
+                },
+            });
+        } else {
+            // Google Register
+            user = await prisma.user.create({
+                data: {
+                    name: googleIdTokenPayload.name,
+                    email: googleIdTokenPayload.email,
+                    role: UserRole.VIEWER,
+                    googleId: googleIdTokenPayload.sub,
+                    authProvider: AuthProvider.GOOGLE,
+                    emailVerified: true,
+                    patient: {
+                        create: {
+                            name: googleIdTokenPayload.name,
+                            email: googleIdTokenPayload.email,
+                        },
+                    },
+                },
+            });
+
+            // WelCome Message
+            const templatePath = path.join(
+                process.cwd(),
+                'src/templates/user-welcome-email.ejs',
+            );
+
+            const templateData = {
+                name: user.name,
+            };
+
+            const html = await ejs.renderFile(templatePath, templateData);
+
+            await transporter.sendMail({
+                from: config.email_sender,
+                to: user.email,
+                subject: 'Welcome To ForgeIQ',
+                html,
+            });
+        }
+    }
+
+    if (!user) {
+        throw new Error('User Not Found');
+    }
+
+    if (user.status === UserStatus.SUSPENDED) {
+        throw new Error('User Is SUSPENDED');
+    }
+
+    if (user.isDeleted || user.status === UserStatus.DELETED) {
+        throw new Error('User Is Deleted');
+    }
+
+    const jwtPayload = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    };
+
+    const accessToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_access_secret,
+        config.jwt_access_expires_in as SignOptions,
+    );
+
+    const refreshToken = jwtUtils.createToken(
+        jwtPayload,
+        config.jwt_refresh_secret,
+        config.jwt_refresh_expires_in as SignOptions,
+    );
+
+    return {
+        accessToken,
+        refreshToken,
+    };
+};
+
+const getMeIntoDB = async (user: IRequestUser) => {
+    const isUserExists = await prisma.user.findUnique({
+        where: {
+            id: user.id,
+        },
+        omit: {
+            password: true,
+        },
+    });
+
+    if (!isUserExists) {
+        throw new Error('User not found');
+    }
+
+    return isUserExists;
+};
+
+const getAllUsersIntoDB = async () => {
+    const users = await prisma.user.findMany({
+        omit: { password: true },
+    });
+
+    return users;
+};
+
+const getUserByIdIntoDB = async (userId: string) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        omit: { password: true },
+    });
+
+    if (!user) {
+        throw new Error('User Not Found...!');
+    }
+
+    return user;
+};
+
+const updateMyProfileIntoDB = async (
+    userId: string,
+    payload: Prisma.UserUpdateInput,
+) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if (!user) {
+        throw new Error('User Not Found...!');
+    }
+
+    const { name } = payload;
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { name },
+    });
+
+    return updatedUser;
+};
+
+const uploadProfileImageIntoDB = async (buffer: Buffer, userId: string) => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            id: userId,
+        },
+        select: {
+            imageUrl: true,
+            imagePublicId: true,
+        },
+    });
+
+    const cloudinaryResult = await new Promise<UploadApiResponse>(
+        (resolve, reject) => {
+            cloudinary.uploader
+                .upload_stream(
+                    {
+                        resource_type: 'auto',
+                    },
+
+                    async (error, result) => {
+                        if (error) {
+                            return reject(error);
+                        }
+
+                        if (!result) {
+                            return reject(
+                                new Error('No result returned from Cloudinary'),
+                            );
+                        }
+
+                        resolve(result);
+                    },
+                )
+                .end(buffer);
+        },
+    );
+
+    const updatedUser = await prisma.user.update({
+        where: {
+            id: userId,
+        },
+        data: {
+            imageUrl: cloudinaryResult.secure_url,
+            imagePublicId: cloudinaryResult.public_id,
+        },
+        omit: {
+            password: true,
+        },
+    });
+
+    if (currentUser?.imagePublicId && currentUser.imageUrl) {
+        await cloudinary.uploader.destroy(currentUser.imagePublicId);
+    }
+
+    return updatedUser;
+};
 
 export const authServices = {
     userRegisterIntoDB,
@@ -503,7 +765,7 @@ export const authServices = {
     resetPasswordIntoDB,
     googleLoginIntoDB,
     getMeIntoDB,
-    getUsersIntoDB,
+    getAllUsersIntoDB,
     getUserByIdIntoDB,
     updateMyProfileIntoDB,
     uploadProfileImageIntoDB,

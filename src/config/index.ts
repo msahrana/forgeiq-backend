@@ -26,4 +26,10 @@ export default {
     cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
     cloudinary_api_key: process.env.CLOUDINARY_API_KEY!,
     cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET!,
+    BKash_base_url: process.env.BKASH_BASE_URL!,
+    BKash_username: process.env.BKASH_USERNAME!,
+    BKash_password: process.env.BKASH_PASSWORD!,
+    BKash_app_key: process.env.BKASH_APP_KEY!,
+    BKash_app_secret: process.env.BKASH_APP_SECRET!,
+    BKash_callback_url: process.env.BKASH_CALLBACK_URL!,
 };
