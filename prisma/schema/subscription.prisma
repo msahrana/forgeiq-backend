@@ -1,0 +1,23 @@
+model Subscription {
+  id             String             @id @default(uuid())
+  organizationId String
+  planId         String
+  status         SubscriptionStatus @default(PENDING)
+
+  organization   Organization       @relation( fields: [organizationId], references: [id], onDelete: Cascade )
+
+  plan           Plan               @relation( fields: [planId], references: [id] )
+
+  payments       Payment[]
+  invoices       Invoice[]
+
+  startDate      DateTime?
+  endDate        DateTime?
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId])
+  @@index([planId])
+  @@index([status])
+}

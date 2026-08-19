@@ -1,0 +1,23 @@
+model Invoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
+  subscriptionId String
+  amount         Decimal       @db.Decimal(10, 2)
+  currency       String        @default("BDT")
+  issuedAt       DateTime      @default(now())
+  dueAt          DateTime?
+  paidAt         DateTime?
+
+  status         InvoiceStatus @default(ISSUED)
+
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete:Cascade)
+
+  payments       Payment[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([issuedAt])
+}
