@@ -13,12 +13,12 @@ router.post(
 
 router.get('/', subscriptionControllers.getAllSubscriptions);
 
+router.get('/:id', subscriptionControllers.getSubscriptionById);
+
 router.get(
     '/organization/:organizationId',
     subscriptionControllers.getSubscriptionsByOrganization,
 );
-
-router.get('/:id', subscriptionControllers.getSubscriptionById);
 
 router.patch(
     '/:id',
