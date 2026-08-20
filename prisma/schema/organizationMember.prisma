@@ -16,4 +16,5 @@ model OrganizationMember {
   @@index([organizationId])
   @@index([userId])
   @@index([role])
+  @@index([status])
 }
