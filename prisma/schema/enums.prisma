@@ -280,4 +280,5 @@ enum PaymentGateway {
   SSLCOMMERZ
   STRIPE
   PAYPAL
+  BKASH
 }

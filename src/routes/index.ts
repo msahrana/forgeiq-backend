@@ -6,6 +6,7 @@ import { paymentRoutes } from '../modules/payment/payment.route';
 import { planRoutes } from '../modules/plan/plan.route';
 import { subscriptionRoutes } from '../modules/subscription/subscription.route';
 import { organizationRoutes } from '../modules/organizations/organization.route';
+import { invoiceRoutes } from '../modules/invoice/invoice.route';
 
 const router = Router();
 
@@ -37,6 +38,10 @@ const routerManger = [
     {
         path: '/organizations',
         route: organizationRoutes,
+    },
+    {
+        path: '/invoice',
+        route: invoiceRoutes,
     },
 ];
 

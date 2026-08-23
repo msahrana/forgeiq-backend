@@ -8,7 +8,7 @@ model Payment {
 
   gatewayData    Json?
 
-  gateway       PaymentGateway @default(SSLCOMMERZ)
+  gateway       PaymentGateway @default(STRIPE)
 
   status         PaymentStatus @default(PENDING)
 
@@ -18,6 +18,9 @@ model Payment {
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  stripeSessionId String?      @unique
+  stripePaymentId String?      @unique
 
   @@index([subscriptionId])
   @@index([invoiceId])

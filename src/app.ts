@@ -20,6 +20,7 @@ app.use(
         credentials: true,
     }),
 );
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Enable URL-encoded form data parsing / parser
 app.use(express.urlencoded({ extended: true }));
