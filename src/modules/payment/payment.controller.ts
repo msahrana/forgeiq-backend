@@ -68,7 +68,7 @@ const getSinglePaymentData = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: 'Payment retrieved successfully',
+        message: 'Payment data by Id retrieved successfully',
         data: result,
     });
 });

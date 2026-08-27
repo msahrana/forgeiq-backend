@@ -7,17 +7,21 @@ const router = Router();
 
 router.post(
     '/create',
-    auth(UserRole.VIEWER),
+    auth(UserRole.VIEWER, UserRole.EXECUTIVE, UserRole.TECHNICIAN),
     paymentControllers.createCheckoutSession,
 );
 
 router.post('/webhook', paymentControllers.handleWebhook);
 
-router.get('/', auth(UserRole.VIEWER), paymentControllers.getMyPaymentHistory);
+router.get(
+    '/',
+    auth(UserRole.VIEWER, UserRole.EXECUTIVE, UserRole.TECHNICIAN),
+    paymentControllers.getMyPaymentHistory,
+);
 
 router.get(
     '/:id',
-    auth(UserRole.VIEWER),
+    auth(UserRole.VIEWER, UserRole.EXECUTIVE, UserRole.TECHNICIAN),
     paymentControllers.getSinglePaymentData,
 );
 

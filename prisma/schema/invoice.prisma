@@ -2,8 +2,10 @@ model Invoice {
   id             String        @id @default(uuid())
   invoiceNumber  String        @unique
   subscriptionId String
+
   amount         Decimal       @db.Decimal(10, 2)
   currency       String        @default("BDT")
+
   issuedAt       DateTime      @default(now())
   dueAt          DateTime?
   paidAt         DateTime?
@@ -11,6 +13,10 @@ model Invoice {
   status         InvoiceStatus @default(ISSUED)
 
   subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete:Cascade)
+
+  // Stripe
+  stripeInvoiceId String?         @unique
+  stripeHostedUrl String?
 
   payments       Payment[]
 

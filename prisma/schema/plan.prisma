@@ -1,14 +1,20 @@
 model Plan {
   id              String          @id @default(uuid())
   name            String
+
   description     String?
   price           Decimal         @db.Decimal(10, 2)
   currency        String          @default("BDT")
+  
   isActive        Boolean         @default(true)
 
   billingInterval BillingInterval @default(MONTHLY)
 
   subscriptions   Subscription[]
+
+  // Stripe
+  stripeProductId String?         @unique
+  stripePriceId   String?         @unique
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt

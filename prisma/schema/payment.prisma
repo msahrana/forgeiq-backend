@@ -1,15 +1,16 @@
 model Payment {
   id             String        @id @default(uuid())
+
   subscriptionId String
   invoiceId      String
   transactionId  String        @unique
+
   amount         Decimal       @db.Decimal(10, 2)
   currency       String        @default("BDT")
 
   gatewayData    Json?
 
   gateway       PaymentGateway @default(STRIPE)
-
   status         PaymentStatus @default(PENDING)
 
   subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
@@ -19,8 +20,11 @@ model Payment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  stripeSessionId String?      @unique
-  stripePaymentId String?      @unique
+  // Stripe
+  stripeSessionId       String? @unique
+  stripePaymentIntentId String? @unique
+  stripePaymentId       String?      @unique
+  stripeCustomerId      String?
 
   @@index([subscriptionId])
   @@index([invoiceId])

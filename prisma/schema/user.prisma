@@ -8,8 +8,10 @@ model User {
   status             UserStatus   @default(ACTIVE)
   needPasswordChange Boolean      @default(false)
   isDeleted          Boolean      @default(false)
+
   googleId           String?      @unique
   authProvider       AuthProvider @default(CREDENTIAL)
+  
   imageUrl           String       @default("")
   imagePublicId      String       @default("")
   image              String?

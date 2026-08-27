@@ -2,6 +2,7 @@ model Subscription {
   id             String             @id @default(uuid())
   organizationId String
   planId         String
+
   status         SubscriptionStatus @default(PENDING)
 
   organization   Organization       @relation( fields: [organizationId], references: [id], onDelete: Cascade )
@@ -11,12 +12,17 @@ model Subscription {
   payments       Payment[]
   invoices       Invoice[]
 
+  // Stripe
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
   startDate      DateTime?
   endDate        DateTime?
 
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
+  @@unique([stripeSubscriptionId])
   @@index([organizationId])
   @@index([planId])
   @@index([status])
