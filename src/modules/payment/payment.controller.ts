@@ -3,12 +3,20 @@ import catchAsync from '../../utils/catchAsync';
 import { paymentServices } from './payment.service';
 import { sendResponse } from '../../utils/sendResponse';
 import httpStatus from 'http-status';
+import AppError from '../../errors/AppError';
 
 const createCheckoutSession = catchAsync(
     async (req: Request, res: Response) => {
-        const userId = req.user?.id;
+        const subscriptionId = req.body?.subscriptionId;
 
-        const { subscriptionId } = req.body;
+        if (!subscriptionId) {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                'subscriptionId is required',
+            );
+        }
+
+        const userId = req.user?.id;
 
         const result = await paymentServices.createCheckoutSessionIntoDB(
             subscriptionId,
@@ -52,7 +60,7 @@ const getMyPaymentHistory = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: 'Payment history retrieved successfully',
+        message: 'My all Payment history retrieved successfully',
         data: result,
     });
 });

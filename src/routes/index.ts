@@ -24,7 +24,7 @@ const routerManger = [
         route: sensorRoutes,
     },
     {
-        path: '/payment',
+        path: '/payments',
         route: paymentRoutes,
     },
     {

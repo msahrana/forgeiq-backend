@@ -17,13 +17,16 @@ model Payment {
 
   invoice        Invoice       @relation( fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   // Stripe
   stripeSessionId       String? @unique
   stripePaymentIntentId String? @unique
-  stripePaymentId       String?      @unique
+  stripePaymentId       String? @unique
   stripeCustomerId      String?
 
   @@index([subscriptionId])

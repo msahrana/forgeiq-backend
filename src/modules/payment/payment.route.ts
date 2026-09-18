@@ -21,7 +21,12 @@ router.get(
 
 router.get(
     '/:id',
-    auth(UserRole.VIEWER, UserRole.EXECUTIVE, UserRole.TECHNICIAN),
+    auth(
+        UserRole.VIEWER,
+        UserRole.EXECUTIVE,
+        UserRole.TECHNICIAN,
+        UserRole.SUPER_ADMIN,
+    ),
     paymentControllers.getSinglePaymentData,
 );
 
