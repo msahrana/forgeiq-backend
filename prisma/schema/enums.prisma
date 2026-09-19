@@ -282,3 +282,22 @@ enum PaymentGateway {
   PAYPAL
   BKASH
 }
+
+enum TechnicianStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum TechnicianType {
+  ELECTRICAL
+  MECHANICAL
+  HVAC
+  AUTOMATION
+  INSTRUMENTATION
+  CNC
+  WELDING
+  GENERAL
+}

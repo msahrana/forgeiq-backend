@@ -2,26 +2,45 @@ model Plant {
   id             String      @id @default(uuid())
   organizationId String
   managerId      String?
+
   name           String
   code           String
   location       String?
   timezone       String?
-  status          PlantStatus @default(ACTIVE)
+  status         PlantStatus @default(ACTIVE)
 
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Organization
+  organization   Organization @relation( fields: [organizationId], references: [id], onDelete: Cascade )
 
-  manager         User? @relation("PlantManager", fields: [managerId], references: [id], onDelete: SetNull)
+  // Plant Manager
+  manager        User? @relation( "PlantManager", fields: [managerId], references: [id],  onDelete: SetNull)
 
+  // Production
   productionLines ProductionLine[]
+
+  // Machines
   machines        Machine[]
 
+  // Maintenance
   maintenanceTasks MaintenanceTask[]
+
+  // Work Orders
   workOrders       WorkOrder[]
+
+  // Alerts
   alerts           Alert[]
 
-  productionRecords  ProductionRecord[]
+  // Production Records
+  productionRecords ProductionRecord[]
+
+  // Quality
   qualityInspections QualityInspection[]
+
+  // Energy
   energyRecords      EnergyRecord[]
+
+  // existing fields...
+  technicians Technician[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

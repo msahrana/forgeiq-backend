@@ -23,6 +23,34 @@ export default {
     google_client_id: process.env.GOOGLE_CLIENT_ID!,
     google_client_secret: process.env.GOOGLE_CLIENT_SECRET!,
 
+    super_admin_name: process.env.SUPER_ADMIN_NAME!,
+    super_admin_email: process.env.SUPER_ADMIN_EMAIL!,
+    super_admin_password: process.env.SUPER_ADMIN_PASSWORD!,
+
+    org_owner_name: process.env.ORG_OWNER_NAME!,
+    org_owner_email: process.env.ORG_OWNER_EMAIL!,
+    org_owner_password: process.env.ORG_OWNER_PASSWORD!,
+
+    factory_manager_name: process.env.FACTORY_MANAGER_NAME!,
+    factory_manager_email: process.env.FACTORY_MANAGER_EMAIL!,
+    factory_manager_password: process.env.FACTORY_MANAGER_PASSWORD!,
+
+    production_manager_name: process.env.PRODUCTION_MANAGER_NAME!,
+    production_manager_email: process.env.PRODUCTION_MANAGER_EMAIL!,
+    production_manager_password: process.env.PRODUCTION_MANAGER_PASSWORD!,
+
+    maintenance_engineer_name: process.env.MAINTENANCE_ENGINEER_NAME!,
+    maintenance_engineer_email: process.env.MAINTENANCE_ENGINEER_EMAIL!,
+    maintenance_engineer_password: process.env.MAINTENANCE_ENGINEER_PASSWORD!,
+
+    tester_executive_name: process.env.TESTER_EXECUTIVE_NAME!,
+    tester_executive_email: process.env.TESTER_EXECUTIVE_EMAIL!,
+    tester_executive_password: process.env.TESTER_EXECUTIVE_PASSWORD!,
+
+    tester_technician_name: process.env.TESTER_TECHNICIAN_NAME!,
+    tester_technician__email: process.env.TESTER_TECHNICIAN_EMAIL!,
+    tester_technician__password: process.env.TESTER_TECHNICIAN_PASSWORD!,
+
     redis_user: process.env.REDIS_USER!,
     redis_password: process.env.REDIS_PASSWORD!,
     redis_host: process.env.REDIS_HOST!,

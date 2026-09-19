@@ -1,0 +1,31 @@
+model Technician {
+  id             String             @id @default(uuid())
+  userId         String             @unique
+  organizationId String?
+  plantId        String?
+
+  employeeCode   String             @unique
+  specialization TechnicianType
+  status         TechnicianStatus   @default(ACTIVE)
+
+  phone          String?
+  emergencyPhone String?
+  joiningDate    DateTime?
+  experience     Int?
+  qualification  String?
+  certification  String?
+  address        String?
+  notes          String?
+
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plant          Plant?             @relation(fields: [plantId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId])
+  @@index([plantId])
+  @@index([status])
+  @@index([specialization])
+}

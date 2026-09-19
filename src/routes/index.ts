@@ -7,6 +7,7 @@ import { planRoutes } from '../modules/plan/plan.route';
 import { subscriptionRoutes } from '../modules/subscription/subscription.route';
 import { organizationRoutes } from '../modules/organizations/organization.route';
 import { invoiceRoutes } from '../modules/invoice/invoice.route';
+import { plantRoutes } from '../modules/plants/plant.route';
 
 const router = Router();
 
@@ -42,6 +43,10 @@ const routerManger = [
     {
         path: '/invoice',
         route: invoiceRoutes,
+    },
+    {
+        path: '/plants',
+        route: plantRoutes,
     },
 ];
 
