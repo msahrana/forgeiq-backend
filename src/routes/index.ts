@@ -9,6 +9,7 @@ import { organizationRoutes } from '../modules/organizations/organization.route'
 import { invoiceRoutes } from '../modules/invoice/invoice.route';
 import { plantRoutes } from '../modules/plants/plant.route';
 import { productionLineRoutes } from '../modules/productionLine/productionLine.route';
+import { machineMetricRoutes } from '../modules/machineMetrics/machineMetric.route';
 
 const router = Router();
 
@@ -52,6 +53,14 @@ const routerManger = [
     {
         path: '/productionLines',
         route: productionLineRoutes,
+    },
+    {
+        path: '/machines',
+        route: machineRoutes,
+    },
+    {
+        path: '/machineMetrics',
+        route: machineMetricRoutes,
     },
 ];
 
