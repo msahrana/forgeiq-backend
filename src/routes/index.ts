@@ -13,6 +13,7 @@ import { machineMetricRoutes } from '../modules/machineMetrics/machineMetric.rou
 import { machineThresholdRoutes } from '../modules/machineThreshold/machineThreshold.route';
 import { alertRoutes } from '../modules/alerts/alert.route';
 import { maintenanceRoutes } from '../modules/maintenance/maintenance.route';
+import { workOrderRoutes } from '../modules/workOrder/workOrder.route';
 
 const router = Router();
 
@@ -76,6 +77,10 @@ const routerManger = [
     {
         path: '/maintenance',
         route: maintenanceRoutes,
+    },
+    {
+        path: '/workOrder',
+        route: workOrderRoutes,
     },
 ];
 
