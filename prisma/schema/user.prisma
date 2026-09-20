@@ -46,7 +46,7 @@ model User {
   notifications Notification[]
 
   // Payment
-  payment   Payment[]
+  payments   Payment[]
 
   // Reports
   reports Report[] @relation("ReportCreator")
