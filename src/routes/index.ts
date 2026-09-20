@@ -14,6 +14,7 @@ import { machineThresholdRoutes } from '../modules/machineThreshold/machineThres
 import { alertRoutes } from '../modules/alerts/alert.route';
 import { maintenanceRoutes } from '../modules/maintenance/maintenance.route';
 import { workOrderRoutes } from '../modules/workOrder/workOrder.route';
+import { productionRecordRoutes } from '../modules/productionRecord/productionRecord.route';
 
 const router = Router();
 
@@ -81,6 +82,10 @@ const routerManger = [
     {
         path: '/workOrder',
         route: workOrderRoutes,
+    },
+    {
+        path: '/productionRecord',
+        route: productionRecordRoutes,
     },
 ];
 
