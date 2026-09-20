@@ -8,6 +8,7 @@ import { subscriptionRoutes } from '../modules/subscription/subscription.route';
 import { organizationRoutes } from '../modules/organizations/organization.route';
 import { invoiceRoutes } from '../modules/invoice/invoice.route';
 import { plantRoutes } from '../modules/plants/plant.route';
+import { productionLineRoutes } from '../modules/productionLine/productionLine.route';
 
 const router = Router();
 
@@ -47,6 +48,10 @@ const routerManger = [
     {
         path: '/plants',
         route: plantRoutes,
+    },
+    {
+        path: '/productionLines',
+        route: productionLineRoutes,
     },
 ];
 
