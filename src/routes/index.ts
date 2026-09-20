@@ -10,6 +10,7 @@ import { invoiceRoutes } from '../modules/invoice/invoice.route';
 import { plantRoutes } from '../modules/plants/plant.route';
 import { productionLineRoutes } from '../modules/productionLine/productionLine.route';
 import { machineMetricRoutes } from '../modules/machineMetrics/machineMetric.route';
+import { machineThresholdRoutes } from '../modules/machineThreshold/machineThreshold.route';
 
 const router = Router();
 
@@ -61,6 +62,10 @@ const routerManger = [
     {
         path: '/machineMetrics',
         route: machineMetricRoutes,
+    },
+    {
+        path: '/machineThreshold',
+        route: machineThresholdRoutes,
     },
 ];
 
