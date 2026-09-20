@@ -11,6 +11,7 @@ import { plantRoutes } from '../modules/plants/plant.route';
 import { productionLineRoutes } from '../modules/productionLine/productionLine.route';
 import { machineMetricRoutes } from '../modules/machineMetrics/machineMetric.route';
 import { machineThresholdRoutes } from '../modules/machineThreshold/machineThreshold.route';
+import { alertRoutes } from '../modules/alerts/alert.route';
 
 const router = Router();
 
@@ -66,6 +67,10 @@ const routerManger = [
     {
         path: '/machineThreshold',
         route: machineThresholdRoutes,
+    },
+    {
+        path: '/alerts',
+        route: alertRoutes,
     },
 ];
 
