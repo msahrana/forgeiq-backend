@@ -15,6 +15,8 @@ import { alertRoutes } from '../modules/alerts/alert.route';
 import { maintenanceRoutes } from '../modules/maintenance/maintenance.route';
 import { workOrderRoutes } from '../modules/workOrder/workOrder.route';
 import { productionRecordRoutes } from '../modules/productionRecord/productionRecord.route';
+import { qualityInspectionRoutes } from '../modules/qualityInspection/qualityInspection.route';
+import { energyRoutes } from '../modules/energy/energy.route';
 
 const router = Router();
 
@@ -86,6 +88,14 @@ const routerManger = [
     {
         path: '/productionRecord',
         route: productionRecordRoutes,
+    },
+    {
+        path: '/qualityInspection',
+        route: qualityInspectionRoutes,
+    },
+    {
+        path: '/energy',
+        route: energyRoutes,
     },
 ];
 
