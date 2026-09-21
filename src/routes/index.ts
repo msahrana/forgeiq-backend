@@ -18,6 +18,7 @@ import { productionRecordRoutes } from '../modules/productionRecord/productionRe
 import { qualityInspectionRoutes } from '../modules/qualityInspection/qualityInspection.route';
 import { energyRoutes } from '../modules/energy/energy.route';
 import { reportRoutes } from '../modules/reports/report.route';
+import { analyticsRoutes } from '../modules/analytics/analytics.route';
 
 const router = Router();
 
@@ -101,6 +102,10 @@ const routerManger = [
     {
         path: '/reports',
         route: reportRoutes,
+    },
+    {
+        path: '/analytics',
+        route: analyticsRoutes,
     },
 ];
 

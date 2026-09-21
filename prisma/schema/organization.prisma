@@ -26,6 +26,8 @@ model Organization {
   // existing fields...
   technicians    Technician[]
 
+  aiInsights     AIInsight[]
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

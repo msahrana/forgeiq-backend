@@ -1,0 +1,33 @@
+model AIInsight {
+  id             String   @id @default(uuid())
+
+  organizationId String
+  plantId        String?
+
+  type           AIInsightType
+  severity       AIInsightSeverity
+
+  title          String
+  message        String
+
+  recommendation String?
+
+  metadata       Json?
+
+  isResolved     Boolean  @default(false)
+  resolvedAt     DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation( fields: [organizationId], references: [id], onDelete: Cascade )
+
+  plant          Plant? @relation( fields: [plantId], references: [id], onDelete: SetNull )
+
+  @@index([organizationId])
+  @@index([plantId])
+  @@index([type])
+  @@index([severity])
+  @@index([isResolved])
+  @@index([createdAt])
+}

@@ -40,9 +40,11 @@ model Plant {
   energyRecords      EnergyRecord[]
 
   // existing fields...
-  technicians Technician[]
+  technicians        Technician[]
 
-  reports Report[]
+  reports            Report[]
+
+  aiInsights         AIInsight[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

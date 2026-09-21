@@ -301,3 +301,20 @@ enum TechnicianType {
   WELDING
   GENERAL
 }
+
+enum AIInsightType {
+  MACHINE_FAILURE
+  PRODUCTION_DROP
+  ENERGY_SPIKE
+  QUALITY_ISSUE
+  MAINTENANCE_DUE
+  EFFICIENCY_DROP
+  GENERAL
+}
+
+enum AIInsightSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
