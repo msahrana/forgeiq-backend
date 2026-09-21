@@ -5,8 +5,8 @@
     "main": "index.js",
     "scripts": {
         "dev": "tsx watch src/server.ts",
-        "build": "tsc",
-        "start": "node dist/src/server.js",
+        "build": "tsup",
+        "start": "node dist/server.js",
         "stripe:webhook": "stripe listen --forward-to localhost:5000/api/v1/payments/webhook",
         "test": "echo \"Error: no test specified\" && exit 1",
         "format:check": "pnpm exec biome format ./src",
@@ -20,7 +20,7 @@
     "devEngines": {
         "packageManager": {
             "name": "pnpm",
-            "version": "^11.13.0",
+            "version": "^12.5.1",
             "onFail": "download"
         }
     },
@@ -37,6 +37,7 @@
         "@types/nodemailer": "^8.0.1",
         "@types/pg": "^8.21.0",
         "prisma": "^7.9.1",
+        "tsup": "^8.5.1",
         "tsx": "^4.23.12",
         "typescript": "^7.0.2"
     },

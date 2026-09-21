@@ -6,7 +6,7 @@ This repository contains the backend service for the ForgeIQ platform.
 
 ## Live URL:
 
-<!-- Live link Here--- -->
+https://forgeiq-backend.vercel.app
 
 ## 🚀 Overview
 
