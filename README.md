@@ -128,7 +128,7 @@ pnpm dev
 The backend will normally be available at:
 
 ```text
-http://localhost:5000
+https://forgeiq-backend.vercel.app
 ```
 
 ### Production
@@ -156,7 +156,7 @@ GET /
 Example:
 
 ```text
-http://localhost:5000/
+https://forgeiq-backend.vercel.app/
 ```
 
 The page displays:
@@ -373,7 +373,7 @@ Frontend:
 http://localhost:3000
 
 Backend:
-http://localhost:5000
+https://forgeiq-backend.vercel.app
 ```
 
 The production CORS origin should be configured through environment variables rather than hard-coded.
