@@ -42,6 +42,8 @@ model Plant {
   // existing fields...
   technicians Technician[]
 
+  reports Report[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
