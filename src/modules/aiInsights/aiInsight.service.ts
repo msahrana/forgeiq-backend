@@ -382,6 +382,8 @@ const generateAIInsightsIntoDB = async (
 
     const scope = getPlantScope(organizationId, plantId);
 
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
     const [
         machines,
         productionRecords,
@@ -409,7 +411,7 @@ const generateAIInsightsIntoDB = async (
                 ...scope,
 
                 recordedAt: {
-                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    gte: sevenDaysAgo,
                 },
             },
 
@@ -426,13 +428,17 @@ const generateAIInsightsIntoDB = async (
                 ...scope,
 
                 recordedAt: {
-                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    gte: sevenDaysAgo,
                 },
             },
 
             select: {
                 energyConsumed: true,
                 energyCost: true,
+                recordedAt: true,
+            },
+            orderBy: {
+                recordedAt: 'desc',
             },
         }),
 
@@ -441,7 +447,7 @@ const generateAIInsightsIntoDB = async (
                 ...scope,
 
                 inspectionDate: {
-                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    gte: sevenDaysAgo,
                 },
             },
 
@@ -499,6 +505,8 @@ const generateAIInsightsIntoDB = async (
 
                 metadata: {
                     machineId: machine.id,
+                    machineName: machine.name,
+                    machineCode: machine.code,
                     healthScore: machine.healthScore,
                     failureRisk: machine.failureRisk,
                     riskLevel: machine.riskLevel,
@@ -525,6 +533,11 @@ const generateAIInsightsIntoDB = async (
         0,
     );
 
+    const totalProductionDefects = productionRecords.reduce(
+        (sum, record) => sum + record.defectQuantity,
+        0,
+    );
+
     const productionEfficiency =
         totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
 
@@ -548,6 +561,7 @@ const generateAIInsightsIntoDB = async (
             metadata: {
                 totalTarget,
                 totalActual,
+                totalProductionDefects,
                 totalDowntimeMinutes: totalDowntime,
                 productionEfficiency: Number(productionEfficiency.toFixed(2)),
             },
@@ -564,8 +578,7 @@ const generateAIInsightsIntoDB = async (
     if (energyRecords.length > 0) {
         const averageEnergy = totalEnergy / energyRecords.length;
 
-        const latestEnergy =
-            energyRecords[energyRecords.length - 1]?.energyConsumed ?? 0;
+        const latestEnergy = energyRecords[0]?.energyConsumed ?? 0;
 
         if (latestEnergy > averageEnergy * 1.5) {
             insights.push({
@@ -585,6 +598,7 @@ const generateAIInsightsIntoDB = async (
                     'Inspect high-consumption machines and investigate abnormal operating conditions.',
 
                 metadata: {
+                    latestRecordedAt: energyRecords[0]?.recordedAt,
                     averageEnergy: Number(averageEnergy.toFixed(2)),
 
                     latestEnergy,
@@ -599,6 +613,11 @@ const generateAIInsightsIntoDB = async (
 
     const totalInspected = qualityInspections.reduce(
         (sum, inspection) => sum + inspection.inspectedQuantity,
+        0,
+    );
+
+    const totalPassed = qualityInspections.reduce(
+        (sum, inspection) => sum + inspection.passedQuantity,
         0,
     );
 
@@ -621,13 +640,15 @@ const generateAIInsightsIntoDB = async (
             title: 'Quality defect rate is elevated',
 
             message:
-                `The current defect rate is ` + `${defectRate.toFixed(2)}%.`,
+                `The current defect rate is ` + 
+                `${defectRate.toFixed(2)}%.`,
 
             recommendation:
                 'Investigate defect patterns, production conditions, and affected machines or production lines.',
 
             metadata: {
                 totalInspected,
+                totalPassed,
                 totalDefects,
                 defectRate: Number(defectRate.toFixed(2)),
             },
@@ -709,14 +730,51 @@ const generateAIInsightsIntoDB = async (
         });
     }
 
-    /* ---------------------------- SAVE INSIGHTS -------------------------- */
-
-    if (insights.length === 0) {
-        return {
-            generated: 0,
-            insights: [],
-        };
+    /* ------------------------ REMOVE DUPLICATES -------------------------- */ const uniqueInsights =
+        insights.filter(
+            (insight, index, self) =>
+                index ===
+                self.findIndex(
+                    (item) =>
+                        item.organizationId === insight.organizationId &&
+                        item.plantId === insight.plantId &&
+                        item.type === insight.type &&
+                        item.title === insight.title,
+                ),
+        );
+    if (uniqueInsights.length === 0) {
+        return { generated: 0, insights: [] };
     }
+
+    /* ---------------------- CHECK EXISTING INSIGHTS ----------------------- */ const existingInsights =
+        await prisma.aIInsight.findMany({
+            where: {
+                organizationId,
+                ...(plantId ? { plantId } : {}),
+                isResolved: false,
+                OR: uniqueInsights.map((insight) => ({
+                    type: insight.type,
+                    title: insight.title,
+                })),
+            },
+            select: { type: true, title: true, plantId: true },
+        });
+
+    /* ---------------------- FILTER NEW INSIGHTS --------------------------- */ const newInsights =
+        uniqueInsights.filter(
+            (insight) =>
+                !existingInsights.some(
+                    (existing) =>
+                        existing.type === insight.type &&
+                        existing.title === insight.title &&
+                        existing.plantId === insight.plantId,
+                ),
+        );
+    if (newInsights.length === 0) {
+        return { generated: 0, insights: [] };
+    }
+
+    /* ---------------------------- SAVE INSIGHTS -------------------------- */
 
     const createdInsights = await prisma.$transaction(
         insights.map((insight) =>
