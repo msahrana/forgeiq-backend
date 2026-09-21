@@ -19,6 +19,7 @@ import { qualityInspectionRoutes } from '../modules/qualityInspection/qualityIns
 import { energyRoutes } from '../modules/energy/energy.route';
 import { reportRoutes } from '../modules/reports/report.route';
 import { analyticsRoutes } from '../modules/analytics/analytics.route';
+import { aiInsightRoutes } from '../modules/aiInsights/aiInsight.route';
 
 const router = Router();
 
@@ -106,6 +107,10 @@ const routerManger = [
     {
         path: '/analytics',
         route: analyticsRoutes,
+    },
+    {
+        path: '/ai-insights',
+        route: aiInsightRoutes,
     },
 ];
 
