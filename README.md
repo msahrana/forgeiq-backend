@@ -6,7 +6,7 @@ This repository contains the backend service for the ForgeIQ platform.
 
 ## Live URL:
 
-https://forgeiq-backend.vercel.app
+http://localhost:5000
 
 ## 🚀 Overview
 
@@ -128,7 +128,7 @@ pnpm dev
 The backend will normally be available at:
 
 ```text
-https://forgeiq-backend.vercel.app
+http://localhost:5000
 ```
 
 ### Production
@@ -156,7 +156,7 @@ GET /
 Example:
 
 ```text
-https://forgeiq-backend.vercel.app/
+http://localhost:5000
 ```
 
 The page displays:
@@ -373,7 +373,7 @@ Frontend:
 http://localhost:3000
 
 Backend:
-https://forgeiq-backend.vercel.app
+http://localhost:5000
 ```
 
 The production CORS origin should be configured through environment variables rather than hard-coded.

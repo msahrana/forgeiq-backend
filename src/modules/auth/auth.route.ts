@@ -99,4 +99,6 @@ router.patch(
     authControllers.uploadProfileImage,
 );
 
+router.post('/logout', authControllers.logout);
+
 export const authRoutes = router;

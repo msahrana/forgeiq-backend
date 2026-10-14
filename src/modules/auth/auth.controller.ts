@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { IRequestUser } from './auth.interface';
 import AppError from '../../errors/AppError';
+import config from '../../config';
 
 const userRegister = catchAsync(async (req: Request, res: Response) => {
     const payload = req.body;
@@ -55,18 +56,25 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 
     const { accessToken, refreshToken } = result;
 
-    res.cookie('accessToken', accessToken, {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const cookieOptions = {
         httpOnly: true,
-        secure: false,
-        sameSite: 'none',
-        maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
+        secure: isProduction,
+        sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+        path: '/',
+    };
+
+    // Access token cookie (24 hours)
+    res.cookie('accessToken', accessToken, {
+        ...cookieOptions,
+        maxAge: 1000 * 60 * 60 * 24,
     });
 
+    // Refresh token cookie (7 days)
     res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'none',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        ...cookieOptions,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
     sendResponse(res, {
@@ -277,6 +285,28 @@ const uploadProfileImage = catchAsync(
     },
 );
 
+const logout = catchAsync(async (req: Request, res: Response) => {
+    const cookieOptions = {
+        httpOnly: true,
+        secure: config.node_env === 'development' ? false : true,
+        sameSite:
+            config.node_env === 'development'
+                ? ('lax' as const)
+                : ('none' as const),
+        path: '/',
+    };
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'User logged out successfully!',
+        data: null,
+    });
+});
+
 export const authControllers = {
     userRegister,
     verifyEmail,
@@ -291,4 +321,5 @@ export const authControllers = {
     getUserById,
     updateMyProfile,
     uploadProfileImage,
+    logout,
 };
