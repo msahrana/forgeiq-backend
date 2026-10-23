@@ -3,7 +3,93 @@ import AppError from '../../errors/AppError';
 
 import { ICreatePlant, IUpdatePlant } from './plant.interface';
 import { prisma } from '../../lib/prisma';
+import { Prisma } from '../../../generated/prisma/client';
 
+const ALLOWED_MANAGER_ROLES = ['ORG_OWNER', 'FACTORY_MANAGER'] as const;
+
+// Validate a manager and their membership in an organization.
+
+const validatePlantManager = async (
+    organizationId: string,
+    managerId: string,
+) => {
+    const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: {
+            id: true,
+            ownerId: true,
+        },
+    });
+
+    if (!organization) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Organization not found');
+    }
+
+    const manager = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+        },
+    });
+
+    if (!manager) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Plant manager not found');
+    }
+
+    if (manager.status !== 'ACTIVE') {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Plant manager account is not active',
+        );
+    }
+
+    const isOwner = organization.ownerId === manager.id;
+
+    const membership = await prisma.organizationMember.findUnique({
+        where: {
+            userId_organizationId: {
+                userId: manager.id,
+                organizationId: organization.id,
+            },
+        },
+        select: {
+            userId: true,
+            organizationId: true,
+            role: true,
+            status: true,
+        },
+    });
+
+    const isActiveMember = membership?.status === 'ACTIVE';
+
+    if (!isOwner && !isActiveMember) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            membership
+                ? `Plant manager membership is ${membership.status}, not ACTIVE`
+                : 'Plant manager is not a member of this organization',
+        );
+    }
+
+    const isAllowedRole = (ALLOWED_MANAGER_ROLES as readonly string[]).includes(
+        manager.role,
+    );
+
+    if (!isAllowedRole) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Selected user does not have an allowed plant manager role',
+        );
+    }
+
+    return manager;
+};
+
+// CREATE PLANT
 const createPlantIntoDB = async (payload: ICreatePlant) => {
     const {
         organizationId,
@@ -15,10 +101,13 @@ const createPlantIntoDB = async (payload: ICreatePlant) => {
         status,
     } = payload;
 
-    // 1. Check Organization
+    // 1. Validate organization
     const organization = await prisma.organization.findUnique({
         where: {
             id: organizationId,
+        },
+        select: {
+            id: true,
         },
     });
 
@@ -26,39 +115,19 @@ const createPlantIntoDB = async (payload: ICreatePlant) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Organization not found');
     }
 
-    // 2. Check Manager
+    // 2. Validate manager, if provided
     if (managerId) {
-        const manager = await prisma.user.findUnique({
-            where: {
-                id: managerId,
-            },
-        });
-
-        if (!manager) {
-            throw new AppError(httpStatus.NOT_FOUND, 'Plant manager not found');
-        }
-
-        // 3. Check Manager belongs to Organization
-        const organizationMember = await prisma.organizationMember.findFirst({
-            where: {
-                organizationId,
-                userId: managerId,
-            },
-        });
-
-        if (!organizationMember) {
-            throw new AppError(
-                httpStatus.BAD_REQUEST,
-                'Plant manager does not belong to this organization',
-            );
-        }
+        await validatePlantManager(organizationId, managerId);
     }
 
-    // 4. Check duplicate plant code
+    // 3. Check duplicate plant code
     const existingPlant = await prisma.plant.findFirst({
         where: {
             organizationId,
             code,
+        },
+        select: {
+            id: true,
         },
     });
 
@@ -69,11 +138,11 @@ const createPlantIntoDB = async (payload: ICreatePlant) => {
         );
     }
 
-    // 5. Create Plant
-    const result = await prisma.plant.create({
+    // 4. Create plant
+    return prisma.plant.create({
         data: {
             organizationId,
-            managerId,
+            managerId: managerId || null,
             name,
             code,
             location,
@@ -98,64 +167,112 @@ const createPlantIntoDB = async (payload: ICreatePlant) => {
             },
         },
     });
-
-    return result;
 };
 
-const getAllPlantsFromDB = async (organizationId?: string) => {
-    const result = await prisma.plant.findMany({
-        where: organizationId
-            ? {
-                  organizationId,
-              }
-            : undefined,
+// GET ALL PLANTS
+const getAllPlantsFromDB = async (query: Record<string, unknown>) => {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
 
-        include: {
-            organization: {
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
+    const organizationId =
+        typeof query.organizationId === 'string'
+            ? query.organizationId.trim()
+            : '';
+
+    const searchTerm =
+        typeof query.searchTerm === 'string' ? query.searchTerm.trim() : '';
+
+    const where: Prisma.PlantWhereInput = {
+        ...(organizationId && { organizationId }),
+
+        ...(searchTerm && {
+            OR: [
+                {
+                    name: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                    },
+                },
+                {
+                    code: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                    },
+                },
+                {
+                    location: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                    },
+                },
+            ],
+        }),
+    };
+
+    const [plants, total] = await prisma.$transaction([
+        prisma.plant.findMany({
+            where,
+            skip,
+            take: limit,
+            include: {
+                organization: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                    },
+                },
+                manager: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        productionLines: true,
+                        machines: true,
+                        maintenanceTasks: true,
+                        workOrders: true,
+                        alerts: true,
+                        productionRecords: true,
+                        qualityInspections: true,
+                        energyRecords: true,
+                    },
                 },
             },
-
-            manager: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    role: true,
-                },
+            orderBy: {
+                createdAt: 'desc',
             },
+        }),
 
-            _count: {
-                select: {
-                    productionLines: true,
-                    machines: true,
-                    maintenanceTasks: true,
-                    workOrders: true,
-                    alerts: true,
-                    productionRecords: true,
-                    qualityInspections: true,
-                    energyRecords: true,
-                },
-            },
+        prisma.plant.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+        data: plants,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
         },
-
-        orderBy: {
-            createdAt: 'desc',
-        },
-    });
-
-    return result;
+    };
 };
 
+// GET SINGLE PLANT
 const getSinglePlantFromDB = async (id: string) => {
     const result = await prisma.plant.findUnique({
         where: {
             id,
         },
-
         include: {
             organization: {
                 select: {
@@ -167,7 +284,6 @@ const getSinglePlantFromDB = async (id: string) => {
                     timezone: true,
                 },
             },
-
             manager: {
                 select: {
                     id: true,
@@ -177,7 +293,6 @@ const getSinglePlantFromDB = async (id: string) => {
                     status: true,
                 },
             },
-
             _count: {
                 select: {
                     productionLines: true,
@@ -200,11 +315,16 @@ const getSinglePlantFromDB = async (id: string) => {
     return result;
 };
 
+// UPDATE PLANT
 const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
-    // 1. Check Plant
+    // 1. Check plant
     const plant = await prisma.plant.findUnique({
         where: {
             id,
+        },
+        select: {
+            id: true,
+            organizationId: true,
         },
     });
 
@@ -212,35 +332,13 @@ const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Plant not found');
     }
 
-    // 2. Check Manager
-    if (payload.managerId !== undefined && payload.managerId !== null) {
-        const manager = await prisma.user.findUnique({
-            where: {
-                id: payload.managerId,
-            },
-        });
-
-        if (!manager) {
-            throw new AppError(httpStatus.NOT_FOUND, 'Plant manager not found');
-        }
-
-        // 3. Check Manager belongs to same organization
-        const organizationMember = await prisma.organizationMember.findFirst({
-            where: {
-                organizationId: plant.organizationId,
-                userId: payload.managerId,
-            },
-        });
-
-        if (!organizationMember) {
-            throw new AppError(
-                httpStatus.BAD_REQUEST,
-                'Plant manager does not belong to this organization',
-            );
-        }
+    // 2. Validate manager if provided.
+    // null or empty string means remove the assigned manager.
+    if (payload.managerId) {
+        await validatePlantManager(plant.organizationId, payload.managerId);
     }
 
-    // 4. Check duplicate code
+    // 3. Check duplicate plant code
     if (payload.code) {
         const existingPlant = await prisma.plant.findFirst({
             where: {
@@ -249,6 +347,9 @@ const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
                 NOT: {
                     id,
                 },
+            },
+            select: {
+                id: true,
             },
         });
 
@@ -260,38 +361,31 @@ const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
         }
     }
 
-    // 5. Update Plant
-    const result = await prisma.plant.update({
+    // 4. Update plant
+    return prisma.plant.update({
         where: {
             id,
         },
-
         data: {
             ...(payload.managerId !== undefined && {
-                managerId: payload.managerId,
+                managerId: payload.managerId || null,
             }),
-
             ...(payload.name !== undefined && {
                 name: payload.name,
             }),
-
             ...(payload.code !== undefined && {
                 code: payload.code,
             }),
-
             ...(payload.location !== undefined && {
                 location: payload.location,
             }),
-
             ...(payload.timezone !== undefined && {
                 timezone: payload.timezone,
             }),
-
             ...(payload.status !== undefined && {
                 status: payload.status,
             }),
         },
-
         include: {
             organization: {
                 select: {
@@ -300,7 +394,6 @@ const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
                     slug: true,
                 },
             },
-
             manager: {
                 select: {
                     id: true,
@@ -311,10 +404,9 @@ const updatePlantIntoDB = async (id: string, payload: IUpdatePlant) => {
             },
         },
     });
-
-    return result;
 };
 
+// UPDATE PLANT STATUS
 const updatePlantStatusIntoDB = async (
     id: string,
     status: IUpdatePlant['status'],
@@ -323,21 +415,22 @@ const updatePlantStatusIntoDB = async (
         where: {
             id,
         },
+        select: {
+            id: true,
+        },
     });
 
     if (!plant) {
         throw new AppError(httpStatus.NOT_FOUND, 'Plant not found');
     }
 
-    const result = await prisma.plant.update({
+    return prisma.plant.update({
         where: {
             id,
         },
-
         data: {
             status,
         },
-
         include: {
             organization: {
                 select: {
@@ -346,7 +439,6 @@ const updatePlantStatusIntoDB = async (
                     slug: true,
                 },
             },
-
             manager: {
                 select: {
                     id: true,
@@ -357,14 +449,16 @@ const updatePlantStatusIntoDB = async (
             },
         },
     });
-
-    return result;
 };
 
+// DELETE PLANT
 const deletePlantFromDB = async (id: string) => {
     const plant = await prisma.plant.findUnique({
         where: {
             id,
+        },
+        select: {
+            id: true,
         },
     });
 
@@ -372,13 +466,11 @@ const deletePlantFromDB = async (id: string) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Plant not found');
     }
 
-    const result = await prisma.plant.delete({
+    return prisma.plant.delete({
         where: {
             id,
         },
     });
-
-    return result;
 };
 
 export const plantServices = {

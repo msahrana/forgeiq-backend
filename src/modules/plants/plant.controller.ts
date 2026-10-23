@@ -17,16 +17,15 @@ const createPlant = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const getAllPlants = catchAsync(async (req: Request, res: Response) => {
-    const organizationId = req.query.organizationId as string | undefined;
-
-    const result = await plantServices.getAllPlantsFromDB(organizationId);
+const getAllPlants = catchAsync(async (req, res) => {
+    const result = await plantServices.getAllPlantsFromDB(req.query);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: 'All Plants retrieved successfully',
-        data: result,
+        message: 'Plants retrieved successfully',
+        meta: result.meta,
+        data: result.data,
     });
 });
 
