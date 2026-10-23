@@ -99,32 +99,76 @@ const createOrganizationIntoDB = async (
 |--------------------------------------------------------------------------
 */
 
-const getAllOrganizationsIntoDB = async () => {
-    return await prisma.organization.findMany({
-        include: {
-            owner: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true,
+const getAllOrganizationsIntoDB = async (query: Record<string, unknown>) => {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const searchTerm =
+        typeof query.searchTerm === 'string' ? query.searchTerm.trim() : '';
+
+    const where = searchTerm
+        ? {
+              OR: [
+                  {
+                      name: {
+                          contains: searchTerm,
+                          mode: 'insensitive' as const,
+                      },
+                  },
+                  {
+                      slug: {
+                          contains: searchTerm,
+                          mode: 'insensitive' as const,
+                      },
+                  },
+              ],
+          }
+        : {};
+
+    const [organizations, total] = await prisma.$transaction([
+        prisma.organization.findMany({
+            where,
+            skip,
+            take: limit,
+            include: {
+                owner: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        image: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        members: true,
+                        plants: true,
+                        subscriptions: true,
+                        reports: true,
+                    },
                 },
             },
-
-            _count: {
-                select: {
-                    members: true,
-                    plants: true,
-                    subscriptions: true,
-                    reports: true,
-                },
+            orderBy: {
+                createdAt: 'desc',
             },
-        },
+        }),
+        prisma.organization.count({ where }),
+    ]);
 
-        orderBy: {
-            createdAt: 'desc',
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+        data: organizations,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
         },
-    });
+    };
 };
 
 /*
@@ -348,13 +392,9 @@ const deleteOrganizationIntoDB = async (id: string) => {
      * Soft delete through status
      */
 
-    await prisma.organization.update({
+    await prisma.organization.delete({
         where: {
             id,
-        },
-
-        data: {
-            status: OrganizationStatus.CANCELLED,
         },
     });
 };

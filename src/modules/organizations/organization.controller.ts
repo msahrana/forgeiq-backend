@@ -50,7 +50,7 @@ const createOrganization = catchAsync(async (req: Request, res: Response) => {
 */
 
 const getAllOrganizations = catchAsync(async (req: Request, res: Response) => {
-    const result = await organizationServices.getAllOrganizationsIntoDB();
+    const result = await organizationServices.getAllOrganizationsIntoDB(req.query);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
