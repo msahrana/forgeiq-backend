@@ -13,7 +13,13 @@ const router = Router();
 
 router.post(
     '/',
-    auth(UserRole.SUPER_ADMIN, UserRole.ORG_OWNER, UserRole.FACTORY_MANAGER),
+    auth(
+        UserRole.SUPER_ADMIN,
+        UserRole.ORG_OWNER,
+        UserRole.FACTORY_MANAGER,
+        UserRole.PRODUCTION_MANAGER,
+        UserRole.MAINTENANCE_ENGINEER,
+    ),
     validateRequest(createProductionLineValidationSchema),
     productionLineControllers.createProductionLine,
 );

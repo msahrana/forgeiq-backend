@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import { sendResponse } from '../../utils/sendResponse';
 import { productionLineServices } from './productionLine.service';
 import { Request, Response } from 'express';
+import { IQuery } from '../../interface';
 
 const createProductionLine = catchAsync(async (req: Request, res: Response) => {
     const payload = req.body;
@@ -20,10 +21,9 @@ const createProductionLine = catchAsync(async (req: Request, res: Response) => {
 
 const getAllProductionLines = catchAsync(
     async (req: Request, res: Response) => {
-        const plantId = req.query.plantId as string | undefined;
-
-        const result =
-            await productionLineServices.getAllProductionLinesFromDB(plantId);
+        const result = await productionLineServices.getAllProductionLinesFromDB(
+            req.query as IQuery
+        );
 
         sendResponse(res, {
             statusCode: httpStatus.OK,

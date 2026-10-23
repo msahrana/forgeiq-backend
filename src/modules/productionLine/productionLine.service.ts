@@ -6,6 +6,8 @@ import {
     ICreateProductionLine,
     IUpdateProductionLine,
 } from './productionLine.interface';
+import { Prisma } from '../../../generated/prisma/client';
+import { IQuery } from '../../interface';
 
 const createProductionLineIntoDB = async (payload: ICreateProductionLine) => {
     const { plantId, name, code, description, status, targetOutput } = payload;
@@ -70,41 +72,93 @@ const createProductionLineIntoDB = async (payload: ICreateProductionLine) => {
     return result;
 };
 
-const getAllProductionLinesFromDB = async (plantId?: string) => {
-    const result = await prisma.productionLine.findMany({
-        where: plantId
-            ? {
-                  plantId,
-              }
-            : undefined,
 
-        include: {
-            plant: {
-                select: {
-                    id: true,
-                    name: true,
-                    code: true,
-                    location: true,
-                    status: true,
+const getAllProductionLinesFromDB = async (query: IQuery) => {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+
+    const andConditions: Prisma.ProductionLineWhereInput[] = [];
+
+    // Filter by plant
+    if (query.plantId) {
+        andConditions.push({
+            plantId: query.plantId,
+        });
+    }
+
+    // Searching
+    if (query.searchTerm) {
+        andConditions.push({
+            OR: [
+                {
+                    name: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive',
+                    },
                 },
-            },
-
-            _count: {
-                select: {
-                    machines: true,
-                    productionRecords: true,
-                    qualityInspections: true,
+                {
+                    code: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive',
+                    },
                 },
-            },
-        },
+            ],
+        });
+    }
 
-        orderBy: {
-            createdAt: 'desc',
-        },
-    });
+    const where: Prisma.ProductionLineWhereInput = {
+        AND: andConditions,
+    };
 
-    return result;
+    const [productionLines, totalProductionLineCount] =
+        await prisma.$transaction([
+            prisma.productionLine.findMany({
+                where,
+                take: limit,
+                skip,
+                include: {
+                    plant: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true,
+                            location: true,
+                            status: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            machines: true,
+                            productionRecords: true,
+                            qualityInspections: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    [sortBy]: sortOrder,
+                },
+            }),
+
+            prisma.productionLine.count({
+                where,
+            }),
+        ]);
+
+    return {
+        data: productionLines,
+        meta: {
+            page,
+            limit,
+            total: totalProductionLineCount,
+            totalPages: Math.ceil(totalProductionLineCount / limit),
+        },
+    };
 };
+
 
 const getSingleProductionLineFromDB = async (id: string) => {
     const result = await prisma.productionLine.findUnique({
