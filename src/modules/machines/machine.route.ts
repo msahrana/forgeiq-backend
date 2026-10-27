@@ -11,23 +11,19 @@ import {
 
 const router = Router();
 
-/**
- * Create Machine
- */
 router.post(
     '/',
-    auth(UserRole.SUPER_ADMIN, UserRole.ORG_OWNER, UserRole.FACTORY_MANAGER),
+    auth(
+        UserRole.SUPER_ADMIN,
+        UserRole.ORG_OWNER,
+        UserRole.FACTORY_MANAGER,
+        UserRole.PRODUCTION_MANAGER,
+        UserRole.MAINTENANCE_ENGINEER,
+    ),
     validateRequest(createMachineValidationSchema),
     machineControllers.createMachine,
 );
 
-/**
- * Get All Machines
- *
- * Optional:
- * ?plantId=...
- * ?productionLineId=...
- */
 router.get(
     '/',
     auth(
@@ -43,12 +39,21 @@ router.get(
     machineControllers.getAllMachines,
 );
 
-/**
- * Update Machine Status
- *
- * IMPORTANT:
- * This route should be before /:id
- */
+router.get(
+    '/:id',
+    auth(
+        UserRole.SUPER_ADMIN,
+        UserRole.ORG_OWNER,
+        UserRole.FACTORY_MANAGER,
+        UserRole.PRODUCTION_MANAGER,
+        UserRole.MAINTENANCE_ENGINEER,
+        UserRole.TECHNICIAN,
+        UserRole.EXECUTIVE,
+        UserRole.VIEWER,
+    ),
+    machineControllers.getSingleMachine,
+);
+
 router.patch(
     '/:id/status',
     auth(
@@ -63,9 +68,6 @@ router.patch(
     machineControllers.updateMachineStatus,
 );
 
-/**
- * Update Machine
- */
 router.patch(
     '/:id',
     auth(
@@ -78,33 +80,10 @@ router.patch(
     machineControllers.updateMachine,
 );
 
-/**
- * Delete Machine
- */
 router.delete(
     '/:id',
     auth(UserRole.SUPER_ADMIN, UserRole.ORG_OWNER, UserRole.FACTORY_MANAGER),
     machineControllers.deleteMachine,
-);
-
-/**
- * Get Single Machine
- *
- * Keep this after specific routes.
- */
-router.get(
-    '/:id',
-    auth(
-        UserRole.SUPER_ADMIN,
-        UserRole.ORG_OWNER,
-        UserRole.FACTORY_MANAGER,
-        UserRole.PRODUCTION_MANAGER,
-        UserRole.MAINTENANCE_ENGINEER,
-        UserRole.TECHNICIAN,
-        UserRole.EXECUTIVE,
-        UserRole.VIEWER,
-    ),
-    machineControllers.getSingleMachine,
 );
 
 export const machineRoutes = router;

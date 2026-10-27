@@ -6,6 +6,8 @@ import {
     IUpdateMachineStatus,
 } from './machine.interface';
 import { prisma } from '../../lib/prisma';
+import { Prisma } from '../../../generated/prisma/client';
+import { IMachine } from '../../interface';
 
 const createMachineIntoDB = async (payload: ICreateMachine) => {
     const { plantId, productionLineId, code } = payload;
@@ -89,85 +91,104 @@ const createMachineIntoDB = async (payload: ICreateMachine) => {
     return result;
 };
 
-const getAllMachinesFromDB = async (
-    plantId?: string,
-    productionLineId?: string,
-) => {
-    // Validate plant if filter provided
-    if (plantId) {
-        const plant = await prisma.plant.findUnique({
-            where: {
-                id: plantId,
-            },
-        });
+const getAllMachinesFromDB = async (query: IMachine) => {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
 
-        if (!plant) {
-            throw new AppError(httpStatus.NOT_FOUND, 'Plant not found');
-        }
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+
+    const andConditions: Prisma.MachineWhereInput[] = [];
+
+    // Filter by plant
+    if (query.plantId) {
+        andConditions.push({
+            plantId: query.plantId,
+        });
     }
 
-    // Validate production line if filter provided
-    if (productionLineId) {
-        const productionLine = await prisma.productionLine.findUnique({
-            where: {
-                id: productionLineId,
-            },
+    // Filter by production line
+    if (query.productionLineId) {
+        andConditions.push({
+            productionLineId: query.productionLineId,
         });
-
-        if (!productionLine) {
-            throw new AppError(
-                httpStatus.NOT_FOUND,
-                'Production line not found',
-            );
-        }
     }
 
-    const result = await prisma.machine.findMany({
-        where: {
-            ...(plantId && {
-                plantId,
-            }),
+    // Search by machine name or code
+    if (query.searchTerm) {
+        andConditions.push({
+            OR: [
+                {
+                    name: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive',
+                    },
+                },
+                {
+                    code: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive',
+                    },
+                },
+            ],
+        });
+    }
 
-            ...(productionLineId && {
-                productionLineId,
-            }),
-        },
+    const where: Prisma.MachineWhereInput = {
+        AND: andConditions,
+    };
 
-        orderBy: {
-            createdAt: 'desc',
-        },
-
-        include: {
-            plant: {
-                select: {
-                    id: true,
-                    name: true,
-                    code: true,
+    const [machines, totalMachineCount] = await prisma.$transaction([
+        prisma.machine.findMany({
+            where,
+            take: limit,
+            skip,
+            include: {
+                plant: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                    },
+                },
+                productionLine: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        metrics: true,
+                        maintenanceTasks: true,
+                        workOrders: true,
+                        alerts: true,
+                        productionRecords: true,
+                        energyRecords: true,
+                    },
                 },
             },
-
-            productionLine: {
-                select: {
-                    id: true,
-                    name: true,
-                    code: true,
-                },
+            orderBy: {
+                [sortBy]: sortOrder,
             },
+        }),
 
-            _count: {
-                select: {
-                    metrics: true,
-                    maintenanceTasks: true,
-                    workOrders: true,
-                    alerts: true,
-                    productionRecords: true,
-                    energyRecords: true,
-                },
-            },
+        prisma.machine.count({
+            where,
+        }),
+    ]);
+
+    return {
+        data: machines,
+        meta: {
+            page,
+            limit,
+            total: totalMachineCount,
+            totalPages: Math.ceil(totalMachineCount / limit),
         },
-    });
-
-    return result;
+    };
 };
 
 const getSingleMachineFromDB = async (id: string) => {

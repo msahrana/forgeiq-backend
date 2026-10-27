@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import catchAsync from '../../utils/catchAsync';
 import { sendResponse } from '../../utils/sendResponse';
 import { machineServices } from './machine.service';
+import { IQuery } from '../../interface';
 
 const createMachine = catchAsync(async (req: Request, res: Response) => {
     const payload = req.body;
@@ -18,18 +19,16 @@ const createMachine = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllMachines = catchAsync(async (req: Request, res: Response) => {
-    const { plantId, productionLineId } = req.query;
-
     const result = await machineServices.getAllMachinesFromDB(
-        plantId as string | undefined,
-        productionLineId as string | undefined,
+        req.query as unknown as IQuery,
     );
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: 'All Machines retrieved successfully',
-        data: result,
+        meta: result.meta,
+        data: result.data,
     });
 });
 
